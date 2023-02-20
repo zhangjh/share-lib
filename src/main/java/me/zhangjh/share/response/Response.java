@@ -18,6 +18,13 @@ public class Response<T> extends BaseResponse {
         return response;
     }
 
+    public static<T> Response<T> fail(String errorMsg) {
+        Response<T> response = new Response<>();
+        response.setSuccess(false);
+        response.setErrorMsg(errorMsg);
+        return response;
+    }
+
     public static <T> Response<T> fail(String errorCode,  String errorMsg) {
         Response<T> response = new Response<>();
         response.setSuccess(false);

@@ -1,8 +1,8 @@
 package me.zhangjh.share.aspect;
 
+import lombok.SneakyThrows;
 import me.zhangjh.share.constant.ErrorEnum;
 import me.zhangjh.share.exception.BizException;
-import me.zhangjh.share.response.Response;
 import me.zhangjh.share.util.PropertyUtil;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
@@ -11,6 +11,8 @@ import org.aspectj.lang.annotation.Aspect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 
 import static me.zhangjh.share.constant.BizConstant.LOGGER_STR;
@@ -36,22 +38,29 @@ public class ExceptionAspect implements MethodInterceptor {
 
 
     @Override
+    @SneakyThrows
     public Object invoke(MethodInvocation invocation) {
         Object[] arguments = invocation.getArguments();
         logger.info(Arrays.toString(arguments));
 
         try {
-            Object data = invocation.proceed();
-            return Response.success(data);
+            return invocation.proceed();
         } catch (Throwable t) {
             logger.error(t.getMessage());
+            Class<?> returnType = invocation.getMethod().getReturnType();
+            Constructor<?> constructor = returnType.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            Object instance = constructor.newInstance();
+            Method fail = instance.getClass().getMethod("fail", ErrorEnum.class);
+
             if(t.getCause() instanceof BizException) {
-                return Response.fail(ErrorEnum.BIZ_EX);
+                fail.invoke(instance, ErrorEnum.BIZ_EX);
+                return instance;
             }
             if(t.getCause() instanceof RuntimeException) {
-                return Response.fail(ErrorEnum.RUNTIME_EX);
+                fail.invoke(instance, ErrorEnum.RUNTIME_EX);
             }
-            return Response.fail(ErrorEnum.UNKNOW_EX);
+            return fail.invoke(instance, ErrorEnum.UNKNOW_EX);
         }
     }
 }

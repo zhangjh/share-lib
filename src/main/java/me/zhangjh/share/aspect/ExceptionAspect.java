@@ -60,7 +60,7 @@ public class ExceptionAspect implements MethodInterceptor {
             if(t.getCause() instanceof RuntimeException) {
                 fail.invoke(instance, ErrorEnum.RUNTIME_EX);
             }
-            return fail.invoke(instance, ErrorEnum.UNKNOW_EX);
+            return fail.invoke(instance, ErrorEnum.UNKNOWN_EX);
         }
     }
 }

@@ -11,7 +11,7 @@ import lombok.Getter;
 public enum ErrorEnum {
     BIZ_EX("1001", "biz exception msg placeholder, replace me at service layer"),
     RUNTIME_EX("1002", "runtime exception msg placeholder, replace me at service layer"),
-    UNKNOW_EX("1003", "unknow exception msg placeholder, replace it at service layer"),
+    UNKNOWN_EX("1003", "unknow exception msg placeholder, replace it at service layer"),
 
     ;
 

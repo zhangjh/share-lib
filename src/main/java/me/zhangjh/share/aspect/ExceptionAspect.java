@@ -1,8 +1,6 @@
 package me.zhangjh.share.aspect;
 
 import lombok.SneakyThrows;
-import me.zhangjh.share.constant.ErrorEnum;
-import me.zhangjh.share.exception.BizException;
 import me.zhangjh.share.util.PropertyUtil;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
@@ -51,16 +49,10 @@ public class ExceptionAspect implements MethodInterceptor {
             Constructor<?> constructor = returnType.getDeclaredConstructor();
             constructor.setAccessible(true);
             Object instance = constructor.newInstance();
-            Method fail = instance.getClass().getMethod("fail", ErrorEnum.class);
+            Method fail = instance.getClass().getMethod("fail", String.class);
 
-            if(t.getCause() instanceof BizException) {
-                fail.invoke(instance, ErrorEnum.BIZ_EX);
-                return instance;
-            }
-            if(t.getCause() instanceof RuntimeException) {
-                fail.invoke(instance, ErrorEnum.RUNTIME_EX);
-            }
-            return fail.invoke(instance, ErrorEnum.UNKNOWN_EX);
+            // biz customize exception
+            return fail.invoke(instance, t.getCause().getMessage());
         }
     }
 }

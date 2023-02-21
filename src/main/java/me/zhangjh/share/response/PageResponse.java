@@ -1,7 +1,6 @@
 package me.zhangjh.share.response;
 
 import lombok.Data;
-import me.zhangjh.share.constant.ErrorEnum;
 
 import java.util.List;
 
@@ -35,14 +34,6 @@ public class PageResponse<T> extends BaseResponse {
         response.setSuccess(false);
         response.setErrorCode(errorCode);
         response.setErrorMsg(errorMsg);
-        return response;
-    }
-
-    public static <T> PageResponse<T> fail(ErrorEnum errorEnum) {
-        PageResponse<T> response = new PageResponse<>();
-        response.setSuccess(false);
-        response.setErrorCode(errorEnum.getCode());
-        response.setErrorMsg(errorEnum.getMsg());
         return response;
     }
 }

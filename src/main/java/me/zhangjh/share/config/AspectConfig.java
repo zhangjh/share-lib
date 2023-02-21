@@ -1,6 +1,6 @@
 package me.zhangjh.share.config;
 
-import me.zhangjh.share.aspect.ExceptionAspect;
+import me.zhangjh.share.aspect.ResponseAspect;
 import org.springframework.aop.aspectj.AspectJExpressionPointcut;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -18,18 +18,18 @@ import static me.zhangjh.share.constant.BizConstant.PT_EXPRESSION_SERVICE;
  */
 @Configuration
 @EnableAspectJAutoProxy
-public class ExceptionConfig {
+public class AspectConfig {
 
     @Bean
-    @ConditionalOnMissingBean(value = ExceptionAspect.class)
+    @ConditionalOnMissingBean(value = ResponseAspect.class)
     public DefaultPointcutAdvisor exceptionAdvisor() {
-        ExceptionAspect exceptionAspect = new ExceptionAspect();
+        ResponseAspect responseAspect = new ResponseAspect();
         AspectJExpressionPointcut pointcut = new AspectJExpressionPointcut();
         // cut the Controller & Service method
         pointcut.setExpression(PT_EXPRESSION_CONTROLLER  + PT_EXPRESSION_SERVICE);
         DefaultPointcutAdvisor advisor = new DefaultPointcutAdvisor();
         advisor.setPointcut(pointcut);
-        advisor.setAdvice(exceptionAspect);
+        advisor.setAdvice(responseAspect);
         return advisor;
     }
 }

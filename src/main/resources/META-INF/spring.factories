@@ -2,4 +2,4 @@ org.springframework.boot.env.EnvironmentPostProcessor=\
     me.zhangjh.share.config.EnvironmentPropertyPostProcessor
 
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  me.zhangjh.share.config.ExceptionConfig
+  me.zhangjh.share.config.AspectConfig

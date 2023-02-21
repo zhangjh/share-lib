@@ -1,5 +1,6 @@
 package me.zhangjh.share.aspect;
 
+import com.alibaba.fastjson2.JSONObject;
 import lombok.SneakyThrows;
 import me.zhangjh.share.util.PropertyUtil;
 import org.aopalliance.intercept.MethodInterceptor;
@@ -18,10 +19,10 @@ import static me.zhangjh.share.constant.BizConstant.LOGGER_STR;
 /**
  * @author njhxzhangjihong@126.com
  * @date 4:04 PM 2023/2/20
- * @Description
+ * @Description auto logger request、response & exception
  */
 @Aspect
-public class ExceptionAspect implements MethodInterceptor {
+public class ResponseAspect implements MethodInterceptor {
 
     private final Logger logger;
 
@@ -39,10 +40,12 @@ public class ExceptionAspect implements MethodInterceptor {
     @SneakyThrows
     public Object invoke(MethodInvocation invocation) {
         Object[] arguments = invocation.getArguments();
-        logger.info(Arrays.toString(arguments));
+        logger.info(invocation.getMethod().getName() + Arrays.toString(arguments));
 
         try {
-            return invocation.proceed();
+            Object proceed = invocation.proceed();
+            logger.info("response: {}", JSONObject.toJSONString(proceed));
+            return proceed;
         } catch (Throwable t) {
             logger.error(t.getMessage());
             Class<?> returnType = invocation.getMethod().getReturnType();

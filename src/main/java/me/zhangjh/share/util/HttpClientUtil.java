@@ -15,9 +15,11 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -58,6 +60,9 @@ public class HttpClientUtil {
         String method = request.getMethod();
         String body = request.getBody();
         Map<String, String> headerMap = request.getHeaderMap();
+        if(CollectionUtils.isEmpty(headerMap)) {
+            headerMap = new HashMap<>();
+        }
 
         switch (method.toLowerCase()) {
             case "get":

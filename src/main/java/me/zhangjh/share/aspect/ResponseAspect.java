@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.net.URLDecoder;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 
 import static me.zhangjh.share.constant.BizConstant.LOGGER_STR;
@@ -40,7 +42,8 @@ public class ResponseAspect implements MethodInterceptor {
     @SneakyThrows
     public Object invoke(MethodInvocation invocation) {
         Object[] arguments = invocation.getArguments();
-        logger.info(invocation.getMethod().getName() + Arrays.toString(arguments));
+        // request may contains encoded content
+        logger.info(invocation.getMethod().getName() + URLDecoder.decode(Arrays.toString(arguments), Charset.defaultCharset()));
 
         try {
             Object proceed = invocation.proceed();

@@ -58,7 +58,7 @@ public class ResponseAspect implements MethodInterceptor {
             Method fail = instance.getClass().getMethod("fail", String.class);
 
             // biz customize exception
-            return fail.invoke(instance, t.getCause().getMessage());
+            return fail.invoke(instance, t.getMessage());
         }
     }
 }

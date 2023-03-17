@@ -1,26 +1,16 @@
 package me.zhangjh.share.util;
 
 import com.alibaba.fastjson2.JSONObject;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.*;
+import okio.BufferedSource;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.http.HttpStatus;
-import org.apache.http.client.HttpResponseException;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
-import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author njhxzhangjihong@126.com
@@ -30,100 +20,69 @@ import java.util.Map;
 @Slf4j
 public class HttpClientUtil {
 
-    private static final RequestConfig DEFAULT_REQUEST_CONFIG = RequestConfig.custom()
-            .setConnectTimeout(5000)
-            // there may be many content returned, set long socket time out
-            .setSocketTimeout(500000)
-            .setConnectionRequestTimeout(5000)
-            .build();
+    protected static final OkHttpClient OK_HTTP_CLIENT;
 
-    private static RequestConfig requestConfig = DEFAULT_REQUEST_CONFIG;
-
-    /**
-     * set specific config by user
-     * */
-    public static void setRequestConfig(RequestConfig config) {
-        requestConfig = config;
+    static {
+        OkHttpClient.Builder builder = new OkHttpClient.Builder();
+        builder.readTimeout(60, TimeUnit.SECONDS);
+        builder.callTimeout(60, TimeUnit.SECONDS);
+        builder.connectTimeout(60, TimeUnit.SECONDS);
+        builder.writeTimeout(60, TimeUnit.SECONDS);
+        builder.connectionPool(new ConnectionPool(32,
+                5,TimeUnit.MINUTES));
+        OK_HTTP_CLIENT = builder.build();
     }
 
-    /** 10 connections per domain
-     *  100 total
-     */
-    private static final CloseableHttpClient HTTPCLIENT = HttpClients.custom()
-            .setDefaultRequestConfig(requestConfig)
-            .setMaxConnPerRoute(10)
-            .setMaxConnTotal(100)
-            .build();
-
-    public static String sendHttp(HttpRequest request) {
-        StringBuilder url = new StringBuilder(request.getUrl());
-        String method = request.getMethod();
-        String body = request.getBody();
-        Map<String, String> headerMap = request.getHeaderMap();
-        if(CollectionUtils.isEmpty(headerMap)) {
-            headerMap = new HashMap<>();
-        }
-
-        switch (method.toLowerCase()) {
-            case "get":
-                if(StringUtils.isNotEmpty(body)) {
-                    url.append("?");
-                    Map<String, String> params = JSONObject.parseObject(body, Map.class);
-                    for (Map.Entry<String, String> entry : params.entrySet()) {
-                        url.append(entry.getKey()).append("=").append(entry.getValue()).append("&");
-                    }
-                    url.deleteCharAt(url.length() -1);
-                }
-                HttpGet httpGet = new HttpGet(url.toString());
-                for (Map.Entry<String, String> entry : headerMap.entrySet()) {
-                    httpGet.setHeader(entry.getKey(), entry.getValue());
-                }
-                return sendHttp(httpGet);
-            case "post":
-                HttpPost httpPost = new HttpPost(url.toString());
-                for (Map.Entry<String, String> entry : headerMap.entrySet()) {
-                    httpPost.setHeader(entry.getKey(), entry.getValue());
-                }
-                StringEntity entity = new StringEntity(body,
-                        ContentType.create(ContentType.APPLICATION_JSON.getMimeType(),
-                                Charset.defaultCharset()));
-                httpPost.setEntity(entity);
-                return sendHttp(httpPost);
-            default:
-                throw new RuntimeException("Not support method:" + method);
+    public static Object sendNormally(HttpRequest httpRequest) {
+        Request request = buildRequest(httpRequest);
+        try (Response response = OK_HTTP_CLIENT.newCall(request).execute()){
+            return handleResponse(Objects.requireNonNull(response.body()));
+        } catch (IOException e) {
+            log.error("sendNormally exception, ", e);
+            throw new RuntimeException(e);
         }
     }
 
-    /**
-     * get request and no body data
-     */
-    public static String sendHttp(String url) {
-        HttpRequest request = new HttpRequest();
-        request.setUrl(url);
-        request.setMethod("get");
-        return sendHttp(request);
+    public static Object get(String url) {
+        Request request = new Request.Builder().get().url(url).build();
+        try (Response response = OK_HTTP_CLIENT.newCall(request).execute()) {
+            return handleResponse(Objects.requireNonNull(response.body()));
+        } catch (IOException e) {
+            log.error("get exception, ", e);
+            throw new RuntimeException(e);
+        }
     }
 
-    private static String sendHttp(HttpRequestBase httpRequest) {
-        CloseableHttpResponse response = null;
+    protected static Request buildRequest(HttpRequest httpRequest) {
+        // only support application/json
         try {
-            response = HTTPCLIENT.execute(httpRequest);
-            log.info("http request: {}, response{}", httpRequest, response);
-            if(response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
-                return EntityUtils.toString(response.getEntity());
-            }
-            throw new HttpResponseException(response.getStatusLine().getStatusCode(),
-                    response.getStatusLine().getReasonPhrase());
-        } catch (Throwable t) {
-            log.error("sendHttp exception");
-            throw new RuntimeException(t);
-        } finally {
-            if(null != response) {
-                try {
-                    EntityUtils.consume(response.getEntity());
-                } catch (IOException ignored) {
+            JSONObject.parseObject(httpRequest.getReqData());
+        } catch (Exception e) {
+            throw new IllegalArgumentException("reqData isn't json format");
+        }
+        RequestBody requestBody = RequestBody.create(httpRequest.getReqData(),
+                MediaType.get("application/json"));
+        Request.Builder builder = new Request.Builder();
+        builder.url(httpRequest.getUrl())
+                .method(httpRequest.getMethod(), requestBody);
+        for (Map.Entry<String, String> entry : httpRequest.getBizHeaderMap().entrySet()) {
+            builder.addHeader(entry.getKey(), entry.getValue());
+        }
+        return builder.build();
+    }
+
+    @SneakyThrows
+    protected static Object handleResponse(ResponseBody responseBody) {
+        StringBuilder sb = new StringBuilder();
+        try (responseBody) {
+            BufferedSource source = responseBody.source();
+            while (!source.exhausted()) {
+                String line = source.readUtf8Line();
+                if (StringUtils.isNotEmpty(line)) {
+                    sb.append(line);
                 }
             }
         }
+        return sb.toString();
     }
 }

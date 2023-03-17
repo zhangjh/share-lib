@@ -1,6 +1,8 @@
 package me.zhangjh.share.util;
 
 import lombok.Data;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.http.HttpMethod;
 
 import java.util.Map;
 
@@ -12,18 +14,19 @@ import java.util.Map;
 @Data
 public class HttpRequest {
 
+    @NotNull
     private String url;
 
     /**
      * only support get/post request
      */
-    private String method;
+    private String method = HttpMethod.POST.name();
 
-    private Map<String, String> headerMap;
+    private Map<String, String> bizHeaderMap;
 
     /**
      * method: post
      * data body, only support raw data of json format now
      * */
-    private String body;
+    private String reqData;
 }

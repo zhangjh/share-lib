@@ -6,11 +6,13 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import okio.BufferedSource;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 /**
  * @author njhxzhangjihong@126.com
@@ -41,6 +43,22 @@ public class HttpClientUtil {
             log.error("sendNormally exception, ", e);
             throw new RuntimeException(e);
         }
+    }
+
+    public static void sendAsync(HttpRequest httpRequest, Function<Response, Object> responseCb,
+                                        Function<Throwable, Object> failCb) {
+        Request request = buildRequest(httpRequest);
+        Call call = OK_HTTP_CLIENT.newCall(request);
+        call.enqueue(new Callback() {
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                failCb.apply(e);
+            }
+            @Override
+            public void onResponse(@NotNull Call call, @NotNull Response response) {
+                responseCb.apply(response);
+            }
+        });
     }
 
     public static Object get(String url) {

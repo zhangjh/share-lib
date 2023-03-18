@@ -50,7 +50,7 @@ public class ResponseAspect implements MethodInterceptor {
             logger.info("response: {}", JSONObject.toJSONString(proceed));
             return proceed;
         } catch (Throwable t) {
-            logger.error(t.getMessage());
+            logger.error("responseAspect invoke exception:", t);
             Class<?> returnType = invocation.getMethod().getReturnType();
             Constructor<?> constructor = returnType.getDeclaredConstructor();
             constructor.setAccessible(true);

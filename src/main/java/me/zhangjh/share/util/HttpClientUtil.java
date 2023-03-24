@@ -1,7 +1,6 @@
 package me.zhangjh.share.util;
 
 import com.alibaba.fastjson2.JSONObject;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import okio.BufferedSource;
@@ -9,6 +8,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -62,7 +62,15 @@ public class HttpClientUtil {
     }
 
     public static Object get(String url) {
-        Request request = new Request.Builder().get().url(url).build();
+        return get(url, new HashMap<>());
+    }
+
+    public static Object get(String url, Map<String, String> bizParams) {
+        Request.Builder builder = new Request.Builder().get().url(url);
+        for (Map.Entry<String, String> entry : bizParams.entrySet()) {
+            builder.addHeader(entry.getKey(), entry.getValue());
+        }
+        Request request = builder.build();
         try (Response response = OK_HTTP_CLIENT.newCall(request).execute()) {
             return handleResponse(Objects.requireNonNull(response.body()));
         } catch (IOException e) {
@@ -89,7 +97,6 @@ public class HttpClientUtil {
         return builder.build();
     }
 
-    @SneakyThrows
     protected static Object handleResponse(ResponseBody responseBody) {
         StringBuilder sb = new StringBuilder();
         try (responseBody) {
@@ -100,6 +107,9 @@ public class HttpClientUtil {
                     sb.append(line);
                 }
             }
+        } catch (IOException e) {
+            log.error("handleResponse exception:", e);
+            throw new RuntimeException(e);
         }
         return sb.toString();
     }

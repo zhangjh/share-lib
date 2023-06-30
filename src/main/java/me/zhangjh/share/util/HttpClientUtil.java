@@ -26,10 +26,10 @@ public class HttpClientUtil {
 
     static {
         OkHttpClient.Builder builder = new OkHttpClient.Builder();
-        builder.readTimeout(60, TimeUnit.SECONDS);
-        builder.callTimeout(60, TimeUnit.SECONDS);
-        builder.connectTimeout(60, TimeUnit.SECONDS);
-        builder.writeTimeout(60, TimeUnit.SECONDS);
+        builder.readTimeout(10, TimeUnit.MINUTES);
+        builder.callTimeout(10, TimeUnit.MINUTES);
+        builder.connectTimeout(10, TimeUnit.MINUTES);
+        builder.writeTimeout(10, TimeUnit.MINUTES);
         builder.connectionPool(new ConnectionPool(32,
                 5,TimeUnit.MINUTES));
         OK_HTTP_CLIENT = builder.build();

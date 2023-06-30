@@ -4,6 +4,7 @@ import lombok.Data;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.http.HttpMethod;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -22,7 +23,7 @@ public class HttpRequest {
      */
     private String method = HttpMethod.POST.name();
 
-    private Map<String, String> bizHeaderMap;
+    private Map<String, String> bizHeaderMap = new HashMap<>();
 
     /**
      * method: post

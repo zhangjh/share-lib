@@ -7,12 +7,16 @@ import okio.BufferedSource;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * @author njhxzhangjihong@126.com
@@ -45,7 +49,22 @@ public class HttpClientUtil {
         }
     }
 
-    public static void sendAsync(HttpRequest httpRequest, Function<Response, Object> responseCb,
+    /**
+     * stream but not async
+     * response will return back and handled in responseCb function
+     */
+    public static void sendStream(HttpRequest httpRequest, Function<String, Object> responseCb,
+                                     Function<Throwable, Object> failCb) {
+        Request request = buildRequest(httpRequest);
+        try (Response res = OK_HTTP_CLIENT.newCall(request).execute()){
+            handleResponseInCb(res, responseCb, failCb);
+        } catch (IOException e) {
+            log.error("sendStream exception, ", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static void sendAsync(HttpRequest httpRequest, Function<String, Object> responseCb,
                                         Function<Throwable, Object> failCb) {
         Request request = buildRequest(httpRequest);
         Call call = OK_HTTP_CLIENT.newCall(request);
@@ -56,7 +75,7 @@ public class HttpClientUtil {
             }
             @Override
             public void onResponse(@NotNull Call call, @NotNull Response response) {
-                responseCb.apply(response);
+                handleResponseInCb(response, responseCb, failCb);
             }
         });
     }
@@ -112,5 +131,31 @@ public class HttpClientUtil {
             throw new RuntimeException(e);
         }
         return sb.toString();
+    }
+
+    private static void handleResponseInCb(Response response,
+                                           Function<String, Object> responseCb,
+                                           Function<Throwable, Object> failCb) {
+        ResponseBody body = response.body();
+        try {
+            assert body != null;
+            try (InputStreamReader inputStreamReader = new InputStreamReader(body.byteStream(),
+                    StandardCharsets.UTF_8)){
+                try (BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
+                    String ret = bufferedReader.lines().collect(Collectors.joining());
+                    if(responseCb != null) {
+                        responseCb.apply(ret);
+                    }
+                }
+            }
+            // stream response return a finish flag
+            if(responseCb != null) {
+                responseCb.apply("[done]");
+            };
+        } catch (Exception e) {
+            if(failCb != null) {
+                failCb.apply(e);
+            }
+        }
     }
 }

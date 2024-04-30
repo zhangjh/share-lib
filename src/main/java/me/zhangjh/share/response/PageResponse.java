@@ -22,6 +22,13 @@ public class PageResponse<T> extends BaseResponse {
         return response;
     }
 
+    public static <T> PageResponse<T> success(List<T> data, Integer total) {
+        PageResponse<T> response = new PageResponse<>();
+        response.setData(data);
+        response.setTotal(total);
+        return response;
+    }
+
     public static<T> PageResponse<T> fail(String errorMsg) {
         PageResponse<T> response = new PageResponse<>();
         response.setSuccess(false);

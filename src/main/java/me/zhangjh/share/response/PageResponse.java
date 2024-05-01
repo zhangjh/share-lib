@@ -14,15 +14,9 @@ public class PageResponse<T> extends BaseResponse {
 
     private List<T> data;
 
-    private Integer total;
+    private Long total;
 
-    public static<T> PageResponse<T> success(List<T> data) {
-        PageResponse<T> response = new PageResponse<>();
-        response.setData(data);
-        return response;
-    }
-
-    public static <T> PageResponse<T> success(List<T> data, Integer total) {
+    public static <T> PageResponse<T> success(List<T> data, Long total) {
         PageResponse<T> response = new PageResponse<>();
         response.setData(data);
         response.setTotal(total);

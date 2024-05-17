@@ -111,9 +111,13 @@ public class UserController {
         TblAccount tblAccount = new TblAccount();
         Assert.isTrue(StringUtils.isNotEmpty(req.getUserId()), "userId为空");
         Assert.isTrue(StringUtils.isNotEmpty(req.getProductType()), "productType为空");
+        Integer extType = req.getExtType();
+        if(extType == null) {
+            extType = 1;
+        }
         QueryWrapper<TblAccount> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("ext_id", req.getUserId())
-                .eq("ext_type", req.getExtType());
+                .eq("ext_type", extType);
         TblAccount existedUser = wxAccountService.getOne(queryWrapper);
         if(existedUser != null) {
             return Response.success(null);
@@ -143,8 +147,13 @@ public class UserController {
         return Response.success(null);
     }
 
-    @GetMapping("/getUser")
-    public Response<TblAccount> getUser(String userId, Integer extType) {
+    @RequestMapping("/getUser")
+    public Response<TblAccount> getUser(String userId,
+                                        @RequestParam(required = false) Integer extType) {
+        if(extType == null) {
+            // 默认是微信用户
+            extType = 1;
+        }
         QueryWrapper<TblAccount> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("ext_id", userId)
                 .eq("ext_type", extType);

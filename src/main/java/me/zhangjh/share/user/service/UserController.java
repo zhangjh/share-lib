@@ -75,7 +75,7 @@ public class UserController {
         return Response.success(wxUserInfo);
     }
 
-    @GetMapping("/checkWxSign")
+    @RequestMapping("/checkWxSign")
     @SneakyThrows
     public String checkWxSign(String signature, String timestamp,
                               String nonce, String echostr) {

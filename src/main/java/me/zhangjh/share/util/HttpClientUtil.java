@@ -36,12 +36,17 @@ public class HttpClientUtil {
         builder.writeTimeout(10, TimeUnit.MINUTES);
         builder.connectionPool(new ConnectionPool(32,
                 5,TimeUnit.MINUTES));
+        // disallow redirect
+        builder.followRedirects(false);
         OK_HTTP_CLIENT = builder.build();
     }
 
     public static Object sendNormally(HttpRequest httpRequest) {
         Request request = buildRequest(httpRequest);
         try (Response response = OK_HTTP_CLIENT.newCall(request).execute()){
+            if(response.isRedirect()) {
+                return response.header("Location");
+            }
             return handleResponse(Objects.requireNonNull(response.body()));
         } catch (IOException e) {
             log.error("sendNormally exception, ", e);
@@ -91,6 +96,9 @@ public class HttpClientUtil {
         }
         Request request = builder.build();
         try (Response response = OK_HTTP_CLIENT.newCall(request).execute()) {
+            if(response.isRedirect()) {
+                return response.header("Location");
+            }
             return handleResponse(Objects.requireNonNull(response.body()));
         } catch (IOException e) {
             log.error("get exception, ", e);

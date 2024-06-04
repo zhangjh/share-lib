@@ -54,6 +54,17 @@ public class HttpClientUtil {
         }
     }
 
+    public static Object sendNormallyWithCb(HttpRequest httpRequest, Function<ResponseBody, Object> responseCb) {
+        Request request = buildRequest(httpRequest);
+        try (Response response = OK_HTTP_CLIENT.newCall(request).execute()){
+            ResponseBody responseBody = Objects.requireNonNull(response.body());
+            return responseCb.apply(responseBody);
+        } catch (IOException e) {
+            log.error("sendNormallyWithCb exception, ", e);
+            throw new RuntimeException(e);
+        }
+    }
+
     /**
      * stream but not async
      * response will return back and handled in responseCb function
@@ -107,20 +118,34 @@ public class HttpClientUtil {
     }
 
     protected static Request buildRequest(HttpRequest httpRequest) {
-        // only support application/json
-        try {
-            JSONObject.parseObject(httpRequest.getReqData());
-        } catch (Exception e) {
-            throw new IllegalArgumentException("reqData isn't json format");
-        }
-        RequestBody requestBody = RequestBody.create(httpRequest.getReqData(),
-                MediaType.get("application/json"));
+        // if contentType not defined default set as application/json
         Request.Builder builder = new Request.Builder();
-        builder.url(httpRequest.getUrl())
-                .method(httpRequest.getMethod(), requestBody);
+        RequestBody requestBody = RequestBody.create(httpRequest.getReqData(), MediaType.get("application/json"));
+        Map<String, String> headerMap = httpRequest.getBizHeaderMap();
+        boolean isJson = true;
+        for (Map.Entry<String, String> entry : headerMap.entrySet()) {
+            String key = entry.getKey();
+            if("ContentType".equalsIgnoreCase(key)
+                    || "Content-Type".equalsIgnoreCase(key)) {
+                if(!Objects.equals("application/json", entry.getValue())) {
+                    requestBody = RequestBody.create(httpRequest.getReqData(), MediaType.get(entry.getValue()));
+                    isJson = false;
+                }
+            }
+        }
+        if (isJson) {
+            try {
+                JSONObject.parseObject(httpRequest.getReqData());
+            } catch (Exception e) {
+                throw new IllegalArgumentException("reqData isn't json format");
+            }
+        }
         for (Map.Entry<String, String> entry : httpRequest.getBizHeaderMap().entrySet()) {
             builder.addHeader(entry.getKey(), entry.getValue());
         }
+        builder.url(httpRequest.getUrl())
+                .method(httpRequest.getMethod(), requestBody);
+
         return builder.build();
     }
 

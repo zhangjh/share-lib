@@ -127,7 +127,11 @@ public class UserController {
         tblAccount.setAvatar(req.getAvatarUrl());
         tblAccount.setName(req.getNickName());
         tblAccount.setProductType(req.getProductType());
-        wxAccountService.save(tblAccount);
+        try {
+            wxAccountService.save(tblAccount);
+        } catch (org.springframework.dao.DuplicateKeyException e) {
+            log.info("duplicated req: {}", req, e);
+        }
         return Response.success(null);
     }
 
